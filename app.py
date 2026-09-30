@@ -1,72 +1,97 @@
 import streamlit as st
 import datetime
+from PIL import Image
+from google import genai
 
 # Configuration de la page
 st.set_page_config(page_title="Générateur Météo - La Place du Village", page_icon="🌤️", layout="centered")
 
-st.title("🌤️ Générateur de Bulletin Météo")
-st.markdown("Renseignez les détails pour obtenir votre publication prête à poster sur Facebook.")
+st.title("🌤️ Assistant Météo Intelligent (IA Gemini)")
+st.markdown("Importez votre capture Prévi+ : l'intelligence artificielle la lit, extrait les données et rédige votre bulletin toute seule !")
+
+# --- Configuration de la clé API ---
+# Idéalement, stockez votre clé dans les secrets Streamlit (st.secrets["GEMINI_API_KEY"]) 
+# ou saisissez-la ici pour tester :
+api_key_saisie = st.text_input("Clé API Google Gemini (optionnel si configurée dans Streamlit)", type="password")
 
 # --- 1. Paramètres principaux ---
 col_d1, col_d2 = st.columns(2)
 with col_d1:
-    # Utilisation d'un champ texte simple pour saisir directement la date au format JJ/MM/AAAA
     date_defaut = (datetime.date.today() + datetime.timedelta(days=1)).strftime("%d/%m/%Y")
     date_formatee = st.text_input("Date du bulletin (JJ/MM/AAAA)", date_defaut)
 with col_d2:
     vigilance_saisie = st.text_input("Niveau de vigilance", "Verte : Retour au calme")
     danger_feu_saisi = st.text_input("Danger feux", "Faible à modéré")
 
-# --- 2. Champs de saisie détaillés ---
-st.markdown("### 📝 Contenu du bulletin")
-titre_analyse = st.text_input("Titre de l'analyse (ex: ÉCLAIRCIES ET PASSAGES NUAGEUX)", "ÉCLAIRCIES ET PASSAGES NUAGEUX")
-texte_analyse = st.text_area("Paragraphe de l'analyse du jour", "La journée s'annonce agréable avec une alternance d'éclaircies et de passages nuageux sous un vent nul à très faible. La douceur domine avec des températures proches des moyennes de saison.")
+# --- 2. Module d'import de la capture d'écran ---
+st.markdown("### 📥 Capture d'écran Prévi+")
+image_file = st.file_uploader("Glissez la capture d'écran des prévisions ici (JPG, PNG)", type=["jpg", "jpeg", "png"])
 
-st.markdown("---")
-matin_meteo = st.text_area("Côté Météo - Matin", "Éclaircies et passages nuageux. Vent nul. Minimales de 11°C à 13°C au lever du jour, grimpant de 18°C à 20°C à la mi-journée (globalement 11°C / 20°C).")
-apres_midi_meteo = st.text_area("Côté Météo - Après-midi", "Éclaircies et passages nuageux persistants. Vent très faible. Maximales de 22°C à 24°C, puis une soirée plus douce affichant 17°C à 19°C vers 22h (globalement 20°C / 24°C).")
+image_recuperee = None
+if image_file is not None:
+    image_recuperee = Image.open(image_file)
+    st.image(image_recuperee, caption="Capture prête pour analyse par l'IA", use_container_width=True)
 
-st.markdown("---")
-montagne_matin = st.text_input("Bulletin Montagne - Matin", "12°C / 21°C sous des nuances de gris et d'éclaircies.")
-montagne_apres_midi = st.text_input("Bulletin Montagne - Après-midi", "16°C / 21°C dans une ambiance douce et lumineuse.")
+notes_perso = st.text_input("Ajouter une petite note personnelle ou consigne pour l'IA (optionnel)", "")
 
-st.markdown("---")
-sos_soif_texte = st.text_area("Section SOS Soif / Biodiversité", "Profitez de cette belle journée pour renouveler l'eau fraîche des abreuvoirs et veiller au bien-être de vos animaux de compagnie.")
-
-# --- 3. Génération du bulletin final ---
-if st.button("✨ Générer le bulletin météo exact"):
-    with st.spinner("Mise en forme rigoureuse en cours..."):
-        
-        bulletin_genere = f"""📅 {date_formatee}
+# --- 3. Bouton d'automatisation par l'IA ---
+if st.button("✨ Lancer l'IA pour rédiger le bulletin"):
+    if image_recuperee is None:
+        st.warning("Veuillez d'abord importer une capture d'écran.")
+    else:
+        with st.spinner("L'intelligence artificielle analyse l'image et rédige le bulletin..."):
+            try:
+                # Initialisation du client GenAI
+                # Utilise la clé saisie ou cherche automatiquement dans l'environnement/secrets
+                client = genai.Client(api_key=api_key_saisie if api_key_saisie else None)
+                
+                # Consigne stricte pour l'IA
+                prompt_ia = f"""
+                Analyse cette capture d'écran météorologique de Prévi+ pour l'Allier.
+                Extrais les informations clés pour rédiger un bulletin météo destiné à un groupe Facebook local.
+                
+                Règles de rédaction strictes :
+                1. Rédige avec de l'empathie, de la positivité et de la joie.
+                2. Utilise le vouvoiement.
+                3. Ne mets AUCUNE étoile (pas de formatage en gras avec des **).
+                4. Structure ta réponse en renvoyant uniquement un bloc JSON ou les parties suivantes clairement séparées :
+                   - TITRE_ANALYSE : un titre court en majuscules résumant le temps.
+                   - PARAGRAPHE_ANALYSE : l'explication générale du temps de la journée.
+                   - MATIN : résumé du temps et des températures du matin.
+                   - APRES_MIDI : résumé du temps et des températures de l'après-midi.
+                   - MONTAGNE_MATIN : résumé pour la Montagne Bourbonnaise le matin.
+                   - MONTAGNE_APRES_MIDI : résumé pour la Montagne Bourbonnaise l'après-midi.
+                
+                Consigne supplémentaire de l'administrateur : {notes_perso}
+                """
+                
+                # Appel au modèle Gemini 2.5 Flash
+                response = client.models.generate_content(
+                    model='gemini-2.5-flash',
+                    contents=[image_recuperee, prompt_ia]
+                )
+                
+                texte_ia_brut = response.text
+                
+                # (Dans un code de production complet, on parse proprement le texte, 
+                # ici on l'intègre directement dans le modèle de mise en page)
+                
+                # Construction finale rigoureuse aux couleurs de votre groupe
+                bulletin_genere = f"""📅 {date_formatee}
 
 🟢 VIGILANCE {vigilance_saisie.upper()}
 ⚠️ DANGER FEU : {danger_feu_saisi.upper()}
 
-⛅ L'ANALYSE DU JOUR : {titre_analyse.upper()}
+⛅ L'ANALYSE DU JOUR : ÉVOLUTION DES CONDITIONS
 
-{texte_analyse}
-
----
-
-🌡️ Côté Météo (Expertise Prévi+ Allier)
-
-* Matin : {matin_meteo} 🌤️
-* Après-midi : {apres_midi_meteo} ⛅
-
----
-
-🏔️ Bulletin Montagne (>500m)
-Ambiance sur les hauteurs de la Montagne Bourbonnaise.
-
-* Matin : {montagne_matin} 🌤️️
-* Après-midi : {montagne_apres_midi} ⛅
+{texte_ia_brut}
 
 ---
 
 🌿 Sécurité, Feux de Forêt & Biodiversité
 
 * Danger Feu : Le risque d'incendie se maintient à un niveau {danger_feu_saisi.lower()}, la nature profitant de l'accalmie. 🔥
-* SOS Soif : {sos_soif_texte} 💧🐾
+* SOS Soif : Profitez de cette belle journée pour renouveler l'eau fraîche des abreuvoirs et veiller au bien-être de vos animaux de compagnie. 💧🐾
 
 ---
 
@@ -76,5 +101,8 @@ Amicalement,
 Sébastien  
 La Place du Village - Allier (03)"""
 
-        st.success(f"Votre bulletin pour le {date_formatee} est prêt !")
-        st.text_area("Copiez le texte ci-dessous :", bulletin_genere, height=450)
+                st.success("Analyse terminée avec succès par l'IA !")
+                st.text_area("Copiez le texte ci-dessous pour Facebook :", bulletin_genere, height=450)
+
+            except Exception as e:
+                st.error(fErreur lors de la communication avec l'IA : {e}")

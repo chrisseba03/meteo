@@ -1,38 +1,49 @@
 import streamlit as st
+import datetime
 
 # Configuration de la page
 st.set_page_config(page_title="Générateur Météo - La Place du Village", page_icon="🌤️", layout="centered")
 
-st.title("🌤️ Générateur de Bulletin Météo Automatique")
-st.markdown("Renseignez ou collez les éléments du jour pour générer votre publication prête pour Facebook.")
+st.title("🌤️ Générateur de Bulletin Météo")
+st.markdown("Préparez votre publication à l'avance pour le lendemain ou les jours suivants.")
 
-# --- Formulaire de saisie ---
-col1, col2 = st.columns(2)
-with col1:
-    date_saisie = st.text_input("Date du bulletin", "Mercredi 30 septembre 2026")
-    vigilance_saisie = st.text_input("Niveau de vigilance", "Jaune : Orages et pluies")
-with col2:
+# --- Sélection de la date cible ---
+col_d1, col_d2 = st.columns(2)
+with col_d1:
+    # Par défaut, propose la date du lendemain pour vos publications anticipées
+    date_visee = st.date_input("Date du bulletin", datetime.date.today() + datetime.timedelta(days=1))
+with col_d2:
+    vigilance_saisie = st.text_input("Niveau de vigilance", "Vert : Retour au calme")
     danger_feu_saisi = st.text_input("Danger feux", "Niveau modéré")
-    
-# Zone pour coller les données brutes ou les grandes lignes
-donnees_brutes = st.text_area("Texte ou données brutes (matin, après-midi, montagnes...)", 
-                              placeholder="Collez ici les éléments du bulletin ou de Prévi+...")
 
-# Zone pour vos notes personnelles / touches humaines
+# Formattage de la date en français (ex: "Jeudi 1er octobre 2026")
+jours_semaine = ["Lundi", "Mardi", "Mercredi", "Jeudi", "Vendredi", "Samedi", "Dimanche"]
+mois_annee = ["janvier", "février", "mars", "avril", "mai", "juin", "juillet", "août", "septembre", "octobre", "novembre", "décembre"]
+
+nom_jour = jours_semaine[date_visee.weekday()]
+num_jour = "1er" if date_visee.day == 1 else str(date_visee.day)
+nom_mois = mois_annee[date_visee.month - 1]
+annee = date_visee.year
+
+date_formatee = f"{nom_jour} {num_jour} {nom_mois} {annee}"
+
+# --- Zones de saisie ---
+donnees_brutes = st.text_area("Texte ou données brutes (matin, après-midi, tendances...)", 
+                              placeholder="Collez ici les éléments de Prévi+ pour ce jour-là...")
+
 notes_perso = st.text_area("Vos notes personnelles ou remarques du jour (optionnel)", 
-                           placeholder="Ex: Petite pensée pour nos jardins qui avaient bien besoin de cette eau...")
+                           placeholder="Ex: Une petite pensée pour ceux qui préparent les récoltes...")
 
 if st.button("✨ Générer le bulletin météo"):
-    with st.spinner("Mise en forme selon vos critères en cours..."):
+    with st.spinner("Mise en forme en cours..."):
         
-        # Logique de construction du bulletin avec vos critères stricts
-        bulletin_genere = f"""📅 **{date_saisie.upper()}**
+        bulletin_genere = f"""📅 **{date_formatee.upper()}**
 
-🟡 **VIGILANCE : {vigilance_saisie.upper()}**
+🟢 **VIGILANCE : {vigilance_saisie.upper()}**
 ⚠️ **DANGER FEU : {danger_feu_saisi.upper()}**
 
-⛈️ **L'ANALYSE DU JOUR**
-{donnees_brutes if donnees_brutes else "Une perturbation traverse le pays et apporte un changement de temps bienvenu."}
+⛅ **L'ANALYSE DU JOUR**
+{donnees_brutes if donnees_brutes else "Des conditions à suivre de près pour notre département."}
 
 {f"*{notes_perso}*" if notes_perso else ""}
 
@@ -41,7 +52,7 @@ if st.button("✨ Générer le bulletin météo"):
 🌡️ **Côté Météo (Expertise Prévi+ Allier)**
 
 * **Matin :** Analyse des températures et du vent au lever du jour. 🌥️
-* **Après-midi :** Évolution des conditions et des maximales. ⚡🌧️
+* **Après-midi :** Évolution des conditions et des maximales. ⛅
 
 ---
 
@@ -49,7 +60,7 @@ if st.button("✨ Générer le bulletin météo"):
 Ambiance sur les hauteurs de la Montagne Bourbonnaise.
 
 * **Matin :** Conditions fraîches ou nuageuses. 🌥️
-* **Après-midi :** Évolution sur les reliefs. ⛈️
+* **Après-midi :** Évolution sur les reliefs. ☀️
 
 ---
 
@@ -66,5 +77,5 @@ Amicalement,
 **Sébastien**  
 La Place du Village - Allier (03)"""
 
-        st.success("Votre bulletin est prêt !")
+        st.success(f"Votre bulletin pour le **{date_formatee}** est prêt !")
         st.text_area("Copiez le texte ci-dessous pour votre publication Facebook :", bulletin_genere, height=400)

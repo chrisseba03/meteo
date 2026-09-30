@@ -10,8 +10,6 @@ st.title("🌤️ Assistant Météo Intelligent (IA Gemini)")
 st.markdown("Importez votre capture Prévi+ : l'intelligence artificielle la lit, extrait les données et rédige votre bulletin toute seule !")
 
 # --- Configuration de la clé API ---
-# Idéalement, stockez votre clé dans les secrets Streamlit (st.secrets["GEMINI_API_KEY"]) 
-# ou saisissez-la ici pour tester :
 api_key_saisie = st.text_input("Clé API Google Gemini (optionnel si configurée dans Streamlit)", type="password")
 
 # --- 1. Paramètres principaux ---
@@ -42,7 +40,6 @@ if st.button("✨ Lancer l'IA pour rédiger le bulletin"):
         with st.spinner("L'intelligence artificielle analyse l'image et rédige le bulletin..."):
             try:
                 # Initialisation du client GenAI
-                # Utilise la clé saisie ou cherche automatiquement dans l'environnement/secrets
                 client = genai.Client(api_key=api_key_saisie if api_key_saisie else None)
                 
                 # Consigne stricte pour l'IA
@@ -54,13 +51,11 @@ if st.button("✨ Lancer l'IA pour rédiger le bulletin"):
                 1. Rédige avec de l'empathie, de la positivité et de la joie.
                 2. Utilise le vouvoiement.
                 3. Ne mets AUCUNE étoile (pas de formatage en gras avec des **).
-                4. Structure ta réponse en renvoyant uniquement un bloc JSON ou les parties suivantes clairement séparées :
-                   - TITRE_ANALYSE : un titre court en majuscules résumant le temps.
-                   - PARAGRAPHE_ANALYSE : l'explication générale du temps de la journée.
-                   - MATIN : résumé du temps et des températures du matin.
-                   - APRES_MIDI : résumé du temps et des températures de l'après-midi.
-                   - MONTAGNE_MATIN : résumé pour la Montagne Bourbonnaise le matin.
-                   - MONTAGNE_APRES_MIDI : résumé pour la Montagne Bourbonnaise l'après-midi.
+                4. Structure ta réponse en renvoyant clairement :
+                   - Le titre de l'analyse
+                   - Le paragraphe de l'analyse générale
+                   - Le résumé du matin et de l'après-midi
+                   - Les informations pour la Montagne Bourbonnaise
                 
                 Consigne supplémentaire de l'administrateur : {notes_perso}
                 """
@@ -73,16 +68,13 @@ if st.button("✨ Lancer l'IA pour rédiger le bulletin"):
                 
                 texte_ia_brut = response.text
                 
-                # (Dans un code de production complet, on parse proprement le texte, 
-                # ici on l'intègre directement dans le modèle de mise en page)
-                
-                # Construction finale rigoureuse aux couleurs de votre groupe
+                # Construction finale rigoureuse aux couleurs de votre groupe (sans étoiles)
                 bulletin_genere = f"""📅 {date_formatee}
 
 🟢 VIGILANCE {vigilance_saisie.upper()}
 ⚠️ DANGER FEU : {danger_feu_saisi.upper()}
 
-⛅ L'ANALYSE DU JOUR : ÉVOLUTION DES CONDITIONS
+⛅ L'ANALYSE DU JOUR
 
 {texte_ia_brut}
 
@@ -95,7 +87,7 @@ if st.button("✨ Lancer l'IA pour rédiger le bulletin"):
 
 ---
 
-ℹ️ Retrouvez toutes les prévisions actualisées sur https://previplus.fr/
+ℹ️️ Retrouvez toutes les prévisions actualisées sur https://previplus.fr/
 
 Amicalement,  
 Sébastien  
@@ -105,4 +97,4 @@ La Place du Village - Allier (03)"""
                 st.text_area("Copiez le texte ci-dessous pour Facebook :", bulletin_genere, height=450)
 
             except Exception as e:
-                st.error(fErreur lors de la communication avec l'IA : {e}")
+                st.error(f"Erreur lors de la communication avec l'IA : {e}")

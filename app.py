@@ -10,13 +10,12 @@ st.markdown("Renseignez les détails pour obtenir votre publication prête à po
 # --- 1. Paramètres principaux ---
 col_d1, col_d2 = st.columns(2)
 with col_d1:
-    date_visee = st.date_input("Date du bulletin", datetime.date.today() + datetime.timedelta(days=1))
+    # Utilisation d'un champ texte simple pour saisir directement la date au format JJ/MM/AAAA
+    date_defaut = (datetime.date.today() + datetime.timedelta(days=1)).strftime("%d/%m/%Y")
+    date_formatee = st.text_input("Date du bulletin (JJ/MM/AAAA)", date_defaut)
 with col_d2:
     vigilance_saisie = st.text_input("Niveau de vigilance", "Verte : Retour au calme")
     danger_feu_saisi = st.text_input("Danger feux", "Faible à modéré")
-
-# Format de la date en Jour/Mois/Année (ex: 03/10/2026)
-date_formatee = date_visee.strftime("%d/%m/%Y")
 
 # --- 2. Champs de saisie détaillés ---
 st.markdown("### 📝 Contenu du bulletin")
@@ -34,7 +33,7 @@ montagne_apres_midi = st.text_input("Bulletin Montagne - Après-midi", "16°C / 
 st.markdown("---")
 sos_soif_texte = st.text_area("Section SOS Soif / Biodiversité", "Profitez de cette belle journée pour renouveler l'eau fraîche des abreuvoirs et veiller au bien-être de vos animaux de compagnie.")
 
-# --- 3. Génération du bulletin final (sans les étoiles de mise en gras) ---
+# --- 3. Génération du bulletin final ---
 if st.button("✨ Générer le bulletin météo exact"):
     with st.spinner("Mise en forme rigoureuse en cours..."):
         
@@ -59,7 +58,7 @@ if st.button("✨ Générer le bulletin météo exact"):
 🏔️ Bulletin Montagne (>500m)
 Ambiance sur les hauteurs de la Montagne Bourbonnaise.
 
-* Matin : {montagne_matin} 🌤️
+* Matin : {montagne_matin} 🌤️️
 * Après-midi : {montagne_apres_midi} ⛅
 
 ---

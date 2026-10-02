@@ -57,7 +57,7 @@ if st.button("✨ Lancer l'IA pour rédiger le bulletin"):
                 Consigne supplémentaire de l'administrateur : {notes_perso}
                 """
                 
-                # Appel au modèle mis à jour : gemini-3.8-flash
+                # Appel au modèle
                 response = client.models.generate_content(
                     model='gemini-3.8-flash',
                     contents=[image_recuperee, prompt_ia]
@@ -94,4 +94,8 @@ La Place du Village - Allier (03)"""
                 st.text_area("Copiez le texte ci-dessous pour Facebook :", bulletin_genere, height=450)
 
             except Exception as e:
-                st.error(f"Erreur lors de la communication avec l'IA : {e}")
+                # Message adapté si le serveur est momentanément saturé
+                if "503" in str(e):
+                    st.warning("Le serveur de l'IA connaît un petit pic de trafic passager. Patientez quelques secondes et relancez le bouton ! 🌤️")
+                else:
+                    st.error(f"Erreur lors de la communication avec l'IA : {e}")

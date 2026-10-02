@@ -9,9 +9,6 @@ st.set_page_config(page_title="Générateur Météo - La Place du Village", page
 st.title("🌤️ Assistant Météo Intelligent (IA Gemini)")
 st.markdown("Importez votre capture Prévi+ : l'intelligence artificielle la lit, extrait les données et rédige votre bulletin toute seule !")
 
-# --- Configuration de la clé API ---
-api_key_saisie = st.text_input("Clé API Google Gemini (optionnel si configurée dans Streamlit)", type="password")
-
 # --- 1. Paramètres principaux ---
 col_d1, col_d2 = st.columns(2)
 with col_d1:
@@ -39,8 +36,8 @@ if st.button("✨ Lancer l'IA pour rédiger le bulletin"):
     else:
         with st.spinner("L'intelligence artificielle analyse l'image et rédige le bulletin..."):
             try:
-                # Initialisation du client GenAI
-                client = genai.Client(api_key=api_key_saisie if api_key_saisie else None)
+                # Initialisation sécurisée via les secrets configurés sur Streamlit Cloud
+                client = genai.Client(api_key=st.secrets["GEMINI_API_KEY"])
                 
                 # Consigne stricte pour l'IA
                 prompt_ia = f"""
@@ -87,7 +84,7 @@ if st.button("✨ Lancer l'IA pour rédiger le bulletin"):
 
 ---
 
-ℹ️️ Retrouvez toutes les prévisions actualisées sur https://previplus.fr/
+ℹ️ Retrouvez toutes les prévisions actualisées sur https://previplus.fr/
 
 Amicalement,  
 Sébastien  

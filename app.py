@@ -6,8 +6,8 @@ from google import genai
 # Configuration de la page
 st.set_page_config(page_title="Générateur Météo - La Place du Village", page_icon="🌤️", layout="centered")
 
-st.title("🌤️ Assistant Météo Intelligent (IA Gemini)")
-st.markdown("Importez votre capture Prévi+ : l'intelligence artificielle la lit, extrait les données et rédige votre bulletin toute seule !")
+st.title("🌤️️ Assistant Météo Intelligent (IA Gemini)")
+st.markdown("Importez une capture d'écran **ou** collez vos informations brutes : l'intelligence artificielle s'occupe du reste !")
 
 # --- 1. Paramètres principaux ---
 col_d1, col_d2 = st.columns(2)
@@ -18,31 +18,36 @@ with col_d2:
     vigilance_saisie = st.text_input("Niveau de vigilance", "Verte : Retour au calme")
     danger_feu_saisi = st.text_input("Danger feux", "Faible à modéré")
 
-# --- 2. Module d'import de la capture d'écran ---
-st.markdown("### 📥 Capture d'écran Prévi+")
-image_file = st.file_uploader("Glissez la capture d'écran des prévisions ici (JPG, PNG)", type=["jpg", "jpeg", "png"])
+# --- 2. Module d'import (Image OU Texte brut) ---
+st.markdown("### 📥 Source des données météo")
+type_source = st.radio("Choisissez votre méthode :", ["Importer une capture d'écran", "Coller du texte brut"], horizontal=True)
 
 image_recuperee = None
-if image_file is not None:
-    image_recuperee = Image.open(image_file)
-    st.image(image_recuperee, caption="Capture prête pour analyse par l'IA", use_container_width=True)
+texte_brut_fourni = ""
+
+if type_source == "Importer une capture d'écran":
+    image_file = st.file_uploader("Glissez la capture d'écran des prévisions ici (JPG, PNG)", type=["jpg", "jpeg", "png"])
+    if image_file is not None:
+        image_recuperee = Image.open(image_file)
+        st.image(image_recuperee, caption="Capture prête pour analyse par l'IA", use_container_width=True)
+else:
+    texte_brut_fourni = st.text_area("Collez vos notes, températures ou prévisions brutes ici :", height=150, placeholder="Ex: Temps couvert ce matin avec 14°C, belles éclaircies cet l'après-midi et 23°C prévus...")
 
 notes_perso = st.text_input("Ajouter une petite note personnelle ou consigne pour l'IA (optionnel)", "")
 
 # --- 3. Bouton d'automatisation par l'IA ---
 if st.button("✨ Lancer l'IA pour rédiger le bulletin"):
-    if image_recuperee is None:
-        st.warning("Veuillez d'abord importer une capture d'écran.")
+    if image_recuperee is None and not texte_brut_fourni.strip():
+        st.warning("Veuillez d'abord importer une capture d'écran ou coller du texte.")
     else:
-        with st.spinner("L'intelligence artificielle analyse l'image et rédige le bulletin..."):
+        with st.spinner("L'intelligence artificielle rédige le bulletin avec le sourire..."):
             try:
                 # Initialisation sécurisée via les secrets configurés sur Streamlit Cloud
                 client = genai.Client(api_key=st.secrets["GEMINI_API_KEY"])
                 
                 # Consigne stricte pour l'IA
                 prompt_ia = f"""
-                Analyse cette capture d'écran météorologique de Prévi+ pour l'Allier.
-                Extrais les informations clés pour rédiger un bulletin météo destiné à un groupe Facebook local.
+                Rédige un bulletin météo destiné à un groupe Facebook local pour l'Allier en te basant sur les éléments fournis.
                 
                 Règles de rédaction strictes :
                 1. Rédige avec de l'empathie, de la positivité et de la joie.
@@ -54,13 +59,19 @@ if st.button("✨ Lancer l'IA pour rédiger le bulletin"):
                    - Le résumé du matin et de l'après-midi
                    - Les informations pour la Montagne Bourbonnaise
                 
-                Consigne supplémentaire de l'administrateur : {notes_perso}
+                Éléments textuels fournis par l'administrateur : {texte_brut_fourni}
+                Consigne supplémentaire : {notes_perso}
                 """
+                
+                # Préparation du contenu à envoyer à l'IA (image ou texte)
+                contenu_requete = [prompt_ia]
+                if image_recuperee is not None:
+                    contenu_requete.append(image_recuperee)
                 
                 # Appel au modèle
                 response = client.models.generate_content(
                     model='gemini-3.8-flash',
-                    contents=[image_recuperee, prompt_ia]
+                    contents=contenu_requete
                 )
                 
                 texte_ia_brut = response.text
@@ -94,7 +105,6 @@ La Place du Village - Allier (03)"""
                 st.text_area("Copiez le texte ci-dessous pour Facebook :", bulletin_genere, height=450)
 
             except Exception as e:
-                # Message adapté si le serveur est momentanément saturé
                 if "503" in str(e):
                     st.warning("Le serveur de l'IA connaît un petit pic de trafic passager. Patientez quelques secondes et relancez le bouton ! 🌤️")
                 else:

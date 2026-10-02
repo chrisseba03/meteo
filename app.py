@@ -57,9 +57,9 @@ if st.button("✨ Lancer l'IA pour rédiger le bulletin"):
                 Consigne supplémentaire de l'administrateur : {notes_perso}
                 """
                 
-                # Appel au modèle Gemini 2.5 Flash
+                # Appel au modèle mis à jour : gemini-3.8-flash
                 response = client.models.generate_content(
-                    model='gemini-2.5-flash',
+                    model='gemini-3.8-flash',
                     contents=[image_recuperee, prompt_ia]
                 )
                 
